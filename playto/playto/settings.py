@@ -20,7 +20,7 @@ ALLOWED_HOSTS = ["*"]
 INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
-    'payouts',
+    'playto.payouts',
 
     'django.contrib.admin',
     'django.contrib.auth',
