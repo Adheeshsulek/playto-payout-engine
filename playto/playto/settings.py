@@ -46,7 +46,7 @@ MIDDLEWARE = [
 ]
 
 
-ROOT_URLCONF = 'playto.urls'
+ROOT_URLCONF = 'playto.playto.urls'
 
 TEMPLATES = [
     {
