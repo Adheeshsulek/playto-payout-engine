@@ -4,4 +4,5 @@ from .views import balance_view, create_payout
 urlpatterns = [
     path('balance', balance_view),
     path('payouts', create_payout),
+    path('seed/', seed_data),
 ]

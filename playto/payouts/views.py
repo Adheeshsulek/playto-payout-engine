@@ -14,6 +14,7 @@ def get_merchant():
     return Merchant.objects.first()
 
 
+# 🔍 BALANCE
 @api_view(['GET'])
 def balance_view(request):
     merchant = get_merchant()
@@ -25,6 +26,7 @@ def balance_view(request):
     return Response({"balance": balance})
 
 
+# 💸 CREATE PAYOUT
 @api_view(['POST'])
 def create_payout(request):
     merchant = get_merchant()
@@ -36,7 +38,7 @@ def create_payout(request):
     amount = request.data.get("amount_paise")
     bank_account_id = request.data.get("bank_account_id")
 
-    #  Validate input
+    # Validate input
     if not idempotency_key:
         return Response({"error": "Missing Idempotency-Key"}, status=400)
 
@@ -54,7 +56,7 @@ def create_payout(request):
     if amount <= 0:
         return Response({"error": "Amount must be greater than 0"}, status=400)
 
-    #  Idempotency (24-hour window)
+    # Idempotency (24-hour window)
     existing = IdempotencyKey.objects.filter(
         key=idempotency_key,
         merchant=merchant,
@@ -66,7 +68,7 @@ def create_payout(request):
 
     with transaction.atomic():
 
-        #  Lock merchant row (prevents race conditions)
+        # Lock merchant row
         merchant = Merchant.objects.select_for_update().get(id=merchant.id)
 
         balance = get_balance(merchant)
@@ -74,7 +76,7 @@ def create_payout(request):
         if balance < amount:
             return Response({"error": "Insufficient balance"}, status=400)
 
-        #  Create payout
+        # Create payout
         payout = Payout.objects.create(
             merchant=merchant,
             amount=amount,
@@ -82,7 +84,7 @@ def create_payout(request):
             bank_account_id=bank_account_id
         )
 
-        #  Hold funds
+        # Hold funds
         LedgerEntry.objects.create(
             merchant=merchant,
             amount=-amount,
@@ -95,14 +97,29 @@ def create_payout(request):
             "status": payout.status
         }
 
-        #  Save idempotency response
+        # Save idempotency response
         IdempotencyKey.objects.create(
             key=idempotency_key,
             merchant=merchant,
             response=response_data
         )
 
-    #  Trigger Celery AFTER transaction commits
+    # Trigger async task AFTER commit
     process_payout.delay(str(payout.id))
 
     return Response(response_data)
+
+
+#  SEED DATA (FOR FREE PLAN — NO SHELL)
+@api_view(['GET'])
+def seed_data(request):
+    merchant, _ = Merchant.objects.get_or_create(name="Test Merchant")
+
+    # Add ₹1000 (100000 paise)
+    LedgerEntry.objects.create(
+        merchant=merchant,
+        amount=100000,
+        type='credit'
+    )
+
+    return Response({"message": "Seed data added"})
