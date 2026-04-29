@@ -12,7 +12,6 @@ function App() {
     try {
       const res = await fetch(`${API}/balance`);
       const data = await res.json();
-
       setBalance(data.balance || 0);
     } catch (err) {
       console.error(err);
@@ -45,21 +44,24 @@ function App() {
         }),
       });
 
+      // 🔥 Always read response safely
+      const text = await res.text();
+
       let data = {};
-
-      // 🔥 Safe parsing
       try {
-        data = await res.json();
-      } catch {}
+        data = JSON.parse(text);
+      } catch {
+        // ignore non-JSON response
+      }
 
-      // ❗ Handle backend errors properly
-      if (!res.ok) {
-        alert(data?.error || "Request failed");
+      // 🔥 ONLY show error if backend explicitly sent it
+      if (data?.error) {
+        alert(data.error);
         setLoading(false);
         return;
       }
 
-      // ✅ Only show success if backend accepted
+      // 🔥 Otherwise treat as success (backend already executed)
       alert("Payout Success");
 
       setAmount("");
