@@ -33,7 +33,7 @@ function App() {
       const rupees = Number(amount);
       const paise = rupees * 100;
 
-      await fetch(`${API}/payouts`, {
+      const res = await fetch(`${API}/payouts`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -45,12 +45,24 @@ function App() {
         }),
       });
 
-      // 🔥 Assume success (backend is working correctly)
+      let data = {};
+
+      // 🔥 Safe parsing
+      try {
+        data = await res.json();
+      } catch {}
+
+      // ❗ Handle backend errors properly
+      if (!res.ok) {
+        alert(data?.error || "Request failed");
+        setLoading(false);
+        return;
+      }
+
+      // ✅ Only show success if backend accepted
       alert("Payout Success");
 
       setAmount("");
-
-      // Refresh balance
       await fetchBalance();
 
     } catch (err) {
