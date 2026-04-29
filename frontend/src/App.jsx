@@ -49,23 +49,21 @@ function App() {
         }),
       });
 
-      // ✅ FIXED: safe parsing without crashing
-      let data = {};
-      try {
-        data = await res.json();
-      } catch {
-        // ignore non-JSON response
+      // ✅ Only trust HTTP status
+      if (!res.ok) {
+        throw new Error("Request failed");
       }
 
-      if (!res.ok) {
-        throw new Error(data?.error || "Request failed");
-      }
+      // Try parsing but don’t depend on it
+      try {
+        await res.json();
+      } catch {}
 
       alert("Payout Success");
 
       setAmount("");
 
-      // 🔥 Refresh balance after payout
+      // 🔥 Refresh balance
       await fetchBalance();
 
     } catch (err) {
